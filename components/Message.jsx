@@ -1,4 +1,4 @@
-import { assets } from '@/assets/assets'
+import { assets } from '../assets/assets'
 // import { Content } from 'next/font/google'
 import Image from 'next/image'
 import React from 'react'
