@@ -2,7 +2,7 @@ import { Webhook } from "svix";
 import connectDB from "@/config/db";
 import User from "@/models/User";
 import { headers } from "next/headers";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 
 export async function POST(req) {
@@ -13,6 +13,7 @@ export async function POST(req) {
         "svix-timestamp":headerPayload.get("svix-timestamp"),
         "svix-signature":headerPayload.get("svix-signature"),
     };
+    console.log("Svix Headers:", svixHeaders);
 
     // Get the payload and verify it
 
@@ -21,14 +22,32 @@ export async function POST(req) {
     const body = JSON.stringify(payload);
     const {data, type} = wh.verify(body, svixHeaders)
 
+
+    console.log("payload",payload)
+    console.log("body",body)
+
+
+//     try {
+//     const payload = await req.json();
+//     const body = JSON.stringify(payload);
+//     const { data, type } = wh.verify(body, svixHeaders);
+//     // Proceed with user data
+// } catch (error) {
+//     console.error("Webhook verification failed:", error.message);
+//     return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 });
+// }
+
     // prepare the user data to be saved in the database
 
     const userData = {
         _id: data.id,
-        email: data.email_addresses[0].email_addresses,
+        email: data.email_addresses[0].email_address,
+
         name: `${data.first_name} ${data.last_name}`,
         image: data.image_url,
     };
+    console.log("UserDataa:", userData)
+    console.log("Dataa:", data)
 
 
     await connectDB();
@@ -48,5 +67,6 @@ export async function POST(req) {
             break;
     }
 
-    return NextRequest.json({message:"Event received"});             
+    return NextResponse.json({ message: "Event received" });            
+    // return NextRequest.json({ message: "Event received" });            
 }

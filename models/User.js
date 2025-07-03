@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const UserSChema = new mongoose.Schema(
+const UserSchema = new mongoose.Schema(
     {
         _id:{type:String, required:true},
         name:{type:String, required:true},
@@ -12,7 +12,7 @@ const UserSChema = new mongoose.Schema(
 
 
 
-const User = mongoose.models.User || mongoose.model("User",UserSChema)
+const User = mongoose.models.User || mongoose.model("User",UserSchema)
 
 
 
