@@ -72,63 +72,63 @@
 // }
 
 
+
 import { Webhook } from "svix";
 import connectDB from "@/config/db";
 import User from "@/models/User";
 import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function POST(req: NextRequest) {
-  const wh = new Webhook(process.env.SIGNING_SECRET!); // Add `!` if you're sure it's defined
-  const headerPayload = headers();
+export async function POST(req) {
+    try {
+        const wh = new Webhook(process.env.SIGNING_SECRET);
+        const headerPayload = await headers();
+        const svixHeaders = {
+            "svix-id": headerPayload.get("svix-id"),
+            "svix-timestamp": headerPayload.get("svix-timestamp"),
+            "svix-signature": headerPayload.get("svix-signature"),
+        };
 
-  const svixHeaders = {
-    "svix-id": headerPayload.get("svix-id")!,
-    "svix-timestamp": headerPayload.get("svix-timestamp")!,
-    "svix-signature": headerPayload.get("svix-signature")!,
-  };
+        // Get and verify the payload
+        const payload = await req.json();
+        const body = JSON.stringify(payload);
+        const { data, type } = wh.verify(body, svixHeaders);
 
-  console.log("Svix Headers:", svixHeaders);
+        console.log("Svix Headers:", svixHeaders);
+        console.log("Payload:", payload);
 
-  try {
-    const payload = await req.json();
-    const body = JSON.stringify(payload);
+        // Prepare user data
+        const userData = {
+            _id: data.id,
+            email: data.email_addresses[0].email_address,
+            name: `${data.first_name} ${data.last_name}`,
+            image: data.image_url,
+        };
 
-    const { data, type } = wh.verify(body, svixHeaders);
+        console.log("User Data:", userData);
 
-    console.log("payload", payload);
-    console.log("body", body);
+        // Connect to database
+        await connectDB();
 
-    const userData = {
-      _id: data.id,
-      email: data.email_addresses[0].email_address,
-      name: `${data.first_name} ${data.last_name}`,
-      image: data.image_url,
-    };
+        // Handle webhook event types
+        switch (type) {
+            case "user.created":
+                await User.create(userData);
+                break;
+            case "user.updated":
+                await User.findByIdAndUpdate(data.id, userData);
+                break;
+            case "user.deleted":
+                await User.findByIdAndDelete(data.id);
+                break;
+            default:
+                console.log("Unhandled event type:", type);
+                break;
+        }
 
-    console.log("UserData:", userData);
-    console.log("Data:", data);
-
-    await connectDB();
-
-    switch (type) {
-      case "user.created":
-        await User.create(userData);
-        break;
-      case "user.updated":
-        await User.findByIdAndUpdate(data.id, userData);
-        break;
-      case "user.deleted":
-        await User.findByIdAndDelete(data.id);
-        break;
-      default:
-        console.warn("Unhandled event type:", type);
-        break;
+        return NextResponse.json({ message: "Event received" }, { status: 200 });
+    } catch (error) {
+        console.error("Webhook processing failed:", error.message);
+        return NextResponse.json({ error: "Invalid webhook signature or server error" }, { status: 400 });
     }
-
-    return NextResponse.json({ message: "Event received" });
-  } catch (error: any) {
-    console.error("Webhook verification failed:", error.message);
-    return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 });
-  }
 }
