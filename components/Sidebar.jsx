@@ -10,7 +10,7 @@ const Sidebar = ({ expand, setExpand }) => {
 
 
   const {openSignIn} = useClerk();
-  const {user} = useAppContext()
+  const {user, chats, createNewChat} = useAppContext()
   const [openMenu, setOpenMenu] = useState({id:0, open:false})
 
 
@@ -35,6 +35,7 @@ const Sidebar = ({ expand, setExpand }) => {
 
 
         <button
+        onClick={createNewChat}
           className={`mt-4 flex items-center justify-center cursor-pointer transition-all duration-300
     ${expand
               ? "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full gap-2 w-max"
@@ -64,7 +65,8 @@ const Sidebar = ({ expand, setExpand }) => {
         <div className={`1mt-8 text-white/25 text-sm ${expand ? "block" : "hidden"}`}>
           <p className='my-1'>Recents</p>
           {/* chatLabel */}
-          <ChatLabel openMenu={openMenu} setOpenMenu={setOpenMenu} />
+          {chats.map((chat)=> <ChatLabel key={chat._id} name={chat.name} id={chat._id} openMenu={openMenu} setOpenMenu={setOpenMenu} />)}
+         
         </div>
 
 
